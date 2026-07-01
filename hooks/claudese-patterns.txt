@@ -1,0 +1,63 @@
+# Claudese patterns. One Python regex per line, case-insensitive.
+# Used by claudese-lint.py (Claude Code Stop hook). '#' lines are comments.
+# Fenced code and `backticked` spans are stripped before matching, so
+# quoting a banned phrase in backticks is allowed.
+# Companion: "How to talk to me" in ~/.claude/CLAUDE.md.
+
+# Borrowed-authority jargon
+load[- ]bearing
+\bsubstrate\b
+\borthogonal\b
+\bat different altitudes\b
+\bnodes and edges\b
+
+# Pivot ritual
+here['’]s the thing
+\bthe honest take\b
+\bthe real question is\b
+\bnobody priced in\b
+\bthe move that makes\b
+\bdistinction worth\b
+
+# False unification
+\bcollapses? into one\b
+\ball one noun\b
+\bcrystalli[sz]
+
+# Gap mysticism
+\bthe quiet part\b
+\bexactly what['’]s missing\b
+
+# Fake-profound reversal
+\bisn['’]t just [^.\n]{1,60}[,;] it['’]s
+\bnot just [^.\n]{1,60}[,;] it['’]s
+\bthis isn['’]t about
+\bisn['’]t a [a-z]+\. it['’]s a
+
+# Reflex validation
+\bgreat question\b
+\babsolutely right\b
+\bexcellent point\b
+
+# Slop vocab (high precision, rare in legit technical prose)
+\bdelve
+\btapestry\b
+\btestament to\b
+\bmultifaceted\b
+
+# The em-dash character itself
+—
+
+# Broader words: real technical uses exist (quoted docs, geometry, API
+# surface), so these are steering-only by default. Uncomment to enforce.
+# \bcrucial\b
+# \brobust
+# \bcomprehensive\b
+# \bnuanced\b
+# \bseamless
+# \bsurface area\b
+# \bprimitive\b
+# \bthe shape of\b
+# \belevate\b
+# \bunlock\b
+# \bjourney\b
