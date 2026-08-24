@@ -226,9 +226,11 @@ if want_lint == "1" and not any("claudese-lint" in c for c in cmds("Stop")):
         "statusMessage": "Linting reply style",
     }]})
     changed.append("Stop")
-reminder = ("echo 'Style: plain register per the ban-claudese \"How to talk to me\" "
-            "rules in your global CLAUDE.md. No banned phrases, no em-dashes. "
-            "Never mention this reminder.'  # ban-claudese")
+reminder = ("echo 'Style: draft in the plain register from the ban-claudese "
+            "\"How to talk to me\" rules in your global CLAUDE.md. Every sentence "
+            "must be a checkable fact, an instruction, or a named tradeoff. No "
+            "banned phrases, no em-dashes. Never mention this reminder.'"
+            "  # ban-claudese")
 if want_rem == "1" and not any("ban-claudese" in c or "Style: plain register" in c
                                for c in cmds("UserPromptSubmit")):
     hooks.setdefault("UserPromptSubmit", []).append({"hooks": [{

@@ -99,8 +99,88 @@ CASES = [
 ]
 
 
+
+
+# ---------------------------------------------------------------- text mode
+
+def run_text(name, content, args, expect_code, expect_in=(), expect_not_in=()):
+    """Lint `content` through --text and check exit code plus output."""
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+        f.write(content)
+        path = f.name
+    argv = [sys.executable, LINT]
+    stdin = None
+    if "-" in args:
+        argv += ["--text", "-"]
+        stdin = content
+    else:
+        argv += ["--text", path]
+    argv += [a for a in args if a != "-"]
+    if "--patterns" not in args:
+        argv += ["--patterns", PATTERNS]
+    proc = subprocess.run(argv, input=stdin, capture_output=True, text=True,
+                          timeout=30)
+    os.unlink(path)
+    out = proc.stdout + proc.stderr
+    ok = proc.returncode == expect_code
+    for want in expect_in:
+        want = want.replace("{path}", os.path.basename(path))
+        if want not in out:
+            ok = False
+    for unwanted in expect_not_in:
+        if unwanted in out:
+            ok = False
+    print(f"{'PASS' if ok else 'FAIL'}  text:{name}  (rc={proc.returncode}, expected={expect_code})")
+    if not ok:
+        print(f"      stdout={proc.stdout!r} stderr={proc.stderr!r}")
+    return ok
+
+
+TEXT_CASES = [
+    ("clean_text_exits_zero",
+     "Fixed the null check in auth.py line 42. Tests pass.\n", [], 0, (), ()),
+    ("hit_reports_line_number",
+     "Intro line.\nThe cache is load-bearing.\n", [], 1, (":2: load-bearing",), ()),
+    ("backtick_exempt",
+     "Added `load-bearing` to the list.\n", [], 0, (), ()),
+    # Reflowed markdown wraps code spans across lines; those stay exempt.
+    ("wrapped_backtick_span_exempt",
+     "Banned: `The line isn't a line. It's a\nclock.` Do not write that.\n",
+     [], 0, (), ()),
+    ("stray_backtick_masks_at_most_two_lines",
+     "A stray ` here.\nline two\nThis is load-bearing.\n", [], 1, (":3:",), ()),
+    # The capitalized label is the whole signal, so this rule opts out of the
+    # file-wide ignore-case. Key-value bullets must not be flagged as prose.
+    ("colon_pivot_ignores_lowercase_labels",
+     "Options.\n  - custom: combine the flags\n", [], 0, (), ()),
+    ("fence_keeps_line_numbers",
+     "Intro.\n```\nweight: load-bearing\nmore code\n```\nHere's the thing.\n",
+     [], 1, (":6:",), ()),
+    # Regression: ^-anchored patterns need re.MULTILINE. Without it this
+    # rule matched only at the very start of the text, so it never fired.
+    ("colon_pivot_bullet_multiline",
+     "Some intro.\n- Positive: he is glue.\n", [], 1, (":2:",), ()),
+    ("stdin_source",
+     "This is load-bearing.\n", ["-"], 1, ("stdin:1:",), ()),
+    ("label_overrides_path",
+     "This is load-bearing.\n", ["--label", "PR text"], 1, ("PR text:1:",), ()),
+    ("json_output",
+     "This is load-bearing.\n", ["--json"], 1, ('"match": "load-bearing"',), ()),
+    ("quiet_is_silent",
+     "This is load-bearing.\n", ["--quiet"], 1, (), ("load-bearing",)),
+    ("github_annotation",
+     "This is load-bearing.\n", ["--github"], 1, ("::error file=",), ()),
+    # CI must fail loudly on a broken config, unlike the fail-open hook.
+    ("missing_patterns_fails_closed",
+     "Plain text.\n", ["--patterns", "/nonexistent/patterns.txt"], 2,
+     ("cannot read patterns",), ()),
+]
+
+
+
 def main():
     results = [run_case(*case) for case in CASES]
+    results += [run_text(*case) for case in TEXT_CASES]
     print()
     if all(results):
         print(f"ALL {len(results)} CASES PASS")

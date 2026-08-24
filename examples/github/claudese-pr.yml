@@ -1,0 +1,60 @@
+# Lint PR titles and bodies for Claudese in CI. No install on anyone's machine.
+#
+# Copy to .github/workflows/claudese-pr.yml in your repo. To start advisory
+# instead of blocking, add `continue-on-error: true` to the job.
+name: claudese
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-text:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch ban-claudese
+        run: |
+          git clone --depth 1 --branch v0.2.0 \
+            https://github.com/matiasdominguez/ban-claudese \
+            "$RUNNER_TEMP/ban-claudese"
+
+      - name: Lint PR title and body
+        env:
+          # Via env, never inlined into run: PR text is untrusted input.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > "$RUNNER_TEMP/pr.md"
+          python3 "$RUNNER_TEMP/ban-claudese/hooks/claudese-lint.py" \
+            --text "$RUNNER_TEMP/pr.md" \
+            --patterns "$RUNNER_TEMP/ban-claudese/hooks/claudese-patterns.txt" \
+            --label "PR text"
+
+  # Uncomment to also lint markdown changed by the PR. Expect noise on docs
+  # that quote Claudese on purpose; exempt those with backticks or fences.
+  #
+  # changed-docs:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Fetch ban-claudese
+  #       run: |
+  #         git clone --depth 1 --branch v0.2.0 \
+  #           https://github.com/matiasdominguez/ban-claudese \
+  #           "$RUNNER_TEMP/ban-claudese"
+  #     - name: Lint changed markdown
+  #       env:
+  #         BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  #         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  #       run: |
+  #         mapfile -t FILES < <(git diff --name-only --diff-filter=d \
+  #           "$BASE_SHA" "$HEAD_SHA" -- '*.md')
+  #         [ ${#FILES[@]} -eq 0 ] && { echo "no markdown changed"; exit 0; }
+  #         python3 "$RUNNER_TEMP/ban-claudese/hooks/claudese-lint.py" \
+  #           --text "${FILES[@]}" \
+  #           --patterns "$RUNNER_TEMP/ban-claudese/hooks/claudese-patterns.txt"

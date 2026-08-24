@@ -11,3 +11,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: make test
+
+  # Dogfood the PR check on this repo, using the local checkout instead of a
+  # pinned clone. Same invocation as examples/github/claudese-pr.yml.
+  pr-text:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint PR title and body
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > "$RUNNER_TEMP/pr.md"
+          python3 hooks/claudese-lint.py \
+            --text "$RUNNER_TEMP/pr.md" \
+            --patterns hooks/claudese-patterns.txt \
+            --label "PR text"

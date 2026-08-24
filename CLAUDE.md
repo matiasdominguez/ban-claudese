@@ -40,8 +40,14 @@ Notes:
 - Keep `rules/how-to-talk-to-me.md` and `hooks/claudese-patterns.txt` in sync:
   a banned move added to the rules should get a regex if one can be written
   with high precision; broad or ambiguous words go in commented-out form.
-- The linter (`hooks/claudese-lint.py`) must always fail open. Never let a
-  parse error or missing file block a user's session.
+- Hook mode in `hooks/claudese-lint.py` must always fail open. Never let a
+  parse error or missing file block a user's session. Text mode (`--text`)
+  fails closed on purpose, because it runs in CI where a silent pass is worse
+  than no check; keep that asymmetry.
+- The rules lead with how to draft, not how to fix. Enforcement is a backstop.
+  Keep new guidance in that order: what to write, then what never to produce.
+- On release, bump the pinned tag in `examples/github/claudese-pr.yml` to the
+  tag you are cutting, or teams copying it will clone an older linter.
 - `rules/enforcement-note.md` is appended to the installed block only when the
   lint hook is selected; keep `{{CLAUDE_DIR}}` placeholders intact.
 - Bump `VERSION` on any change to what gets installed; the version is stamped

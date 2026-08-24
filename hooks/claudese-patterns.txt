@@ -45,6 +45,20 @@ here['’]s the thing
 \btestament to\b
 \bmultifaceted\b
 
+# Colon-pivot bullets: "- Label: elaboration" prose instead of a sentence.
+# Short capitalized label, colon, lowercase prose continuation. Key-value
+# data lines usually have capitalized or backticked values, so they escape.
+# (?-i: ...) turns off the file-wide ignore-case, which this rule needs: the
+# capital is the whole signal, and without it "- custom: combine ..." matches.
+(?-i:^\s*[-*•] +[A-Z][a-z][^:\n]{2,30}: [a-z])
+
+# Metaphor dressing: "X wearing Y's clothes" and kin
+\bwearing [^.\n]{1,40}s clothes
+\bdressed up as\b
+
+# Coach-speak
+\bgrowth edge\b
+
 # The em-dash character itself
 —
 
@@ -61,3 +75,6 @@ here['’]s the thing
 # \belevate\b
 # \bunlock\b
 # \bjourney\b
+# \bnot just\b
+# \bposture\b
+# \bframing\b

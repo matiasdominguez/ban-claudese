@@ -35,10 +35,12 @@ Three components; the installer asks you about each:
 
 1. **Writing rules** (recommended): a "How to talk to me" section appended to
    your global `~/.claude/CLAUDE.md` inside `<!-- ban-claudese -->` markers.
-   Bans eight moves (borrowed-authority jargon, fake-profound reversal, pivot
-   ritual, false unification, gap mysticism, cadence theater, reflex
-   validation, slop vocab) with today's tell phrases as examples. Includes a
-   kill switch: type `talk straight` when Claude slips.
+   It leads with how to draft (open with the answer, name the file and the
+   number, one idea per sentence, say when you are unsure) and then bans eight
+   moves (borrowed-authority jargon, fake-profound reversal, pivot ritual,
+   false unification, gap mysticism, cadence theater, reflex validation, slop
+   vocab) with today's tell phrases as examples. Includes a kill switch: type
+   `talk straight` when Claude slips.
 2. **Enforcement hook** (recommended): a Stop hook
    (`~/.claude/hooks/claudese-lint.py`) that lints every reply against
    `claudese-patterns.txt`. On a match, Claude is blocked from ending its turn
@@ -117,6 +119,62 @@ your copy and writes the new version to `claudese-patterns.txt.new`.
 Judgment calls the regexes can't catch (rule-of-three triads, grand closers)
 are covered by the rules text only.
 
+Upgrading from 0.1.x with a tuned patterns file: take the new one. Before
+0.2.0 the linter compiled patterns without `re.MULTILINE`, so any rule
+anchored with `^` matched only at the very start of a reply and effectively
+never fired. Rules written against that behaviour need a second look, and
+case-sensitive rules now need an explicit `(?-i: ... )` wrapper because the
+file-wide flag is ignore-case. The installer keeps your copy and writes
+`claudese-patterns.txt.new`; diff the two.
+
+## Beyond Claude Code
+
+The linter has a second mode that lints plain text or markdown and reports
+`file:line`. Nothing to install, no hook, no transcript.
+
+```sh
+python3 hooks/claudese-lint.py --text CHANGELOG.md docs/rfc.md
+git log -1 --format=%B | python3 hooks/claudese-lint.py --text -
+```
+
+Exit 0 clean, 1 on findings, 2 on a broken config. Text mode fails closed, on
+the grounds that a CI check which silently passes is worse than none. The hook
+mode still fails open so a bad config can never block a session. Flags:
+`--patterns PATH`, `--label NAME` for the reported source name, `--json`,
+`--github` for Actions annotations (auto-detected via `$GITHUB_ACTIONS`), and
+`--quiet` for exit status only.
+
+### PR text in CI
+
+`examples/github/claudese-pr.yml` lints PR titles and bodies on every pull
+request. Copy it to `.github/workflows/` and pin the tag you want. It reads the
+PR text through environment variables rather than inlining it into `run:`,
+because PR text is untrusted input. Add `continue-on-error: true` to start
+advisory. A commented-out second job lints markdown changed by the PR.
+
+This repo runs the same job on its own PRs.
+
+## Rolling it out to a team
+
+Nobody needs to install anything for the rules to apply.
+
+1. Commit `rules/how-to-talk-to-me.md` into your repo's `CLAUDE.md` (and
+   `AGENTS.md` for Codex, `.cursorrules` for Cursor). Everyone working in that
+   repo gets the register, including for PR bodies and files the agent writes.
+   Edit the kill-switch phrase and the first line to suit the team.
+2. Add the CI check above so PR text is enforced for everyone, whatever tool
+   wrote it.
+3. Anyone who wants live enforcement in their own sessions runs
+   `./install.sh -y` on their machine. That part stays individual, because it
+   edits a personal `~/.claude`.
+
+The rules are language-independent by design: the eight banned moves apply to
+whatever language you write in, and the ninth rule says a new word doing the
+same job is the same violation. The regexes only catch the English tells, so
+enforcement is English-only until someone adds patterns for another language.
+One regex per line in `hooks/claudese-patterns.txt` is the whole extension
+mechanism.
+
 ## Uninstall
 
 ```sh
@@ -145,9 +203,10 @@ Everything else in your config is left alone.
 make test
 ```
 
-`tests/test_lint.py` is a 15-case matrix named by move: each banned move blocks,
+`tests/test_lint.py` is a 29-case matrix named by move: each banned move blocks,
 plain engineering prose passes, backtick/fence exemptions hold, sidechain agent
-text is ignored, and the no-loop guard works. `tests/test_install.sh` installs
+text is ignored, the no-loop guard works, and text mode reports the right line
+numbers and exit codes. `tests/test_install.sh` installs
 into a sandboxed directory and verifies idempotence, preservation of your
 pre-existing hooks, pattern-tuning survival across upgrades, a real lint of a
 Claudese transcript through the installed hook, and clean uninstall. CI runs
