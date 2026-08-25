@@ -173,7 +173,10 @@ except FileNotFoundError:
     text = ""
 s, e = text.find(START), text.find(END)
 if s != -1 and e != -1 and e > s:
-    new = text[:s] + block + text[e + len(END):].lstrip("\n")
+    rest = text[e + len(END):].lstrip("\n")
+    # Keep a blank line before whatever follows; without it every upgrade
+    # eats one separator and eventually welds the block to the next heading.
+    new = text[:s] + block + ("\n" + rest if rest else "")
 elif text.strip():
     new = text.rstrip("\n") + "\n\n" + block
 else:

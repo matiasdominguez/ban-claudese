@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Fetch ban-claudese
         run: |
-          git clone --depth 1 --branch v0.2.0 \
+          git clone --depth 1 --branch v0.2.1 \
             https://github.com/matiasdominguez/ban-claudese \
             "$RUNNER_TEMP/ban-claudese"
 
@@ -44,7 +44,7 @@ jobs:
   #         fetch-depth: 0
   #     - name: Fetch ban-claudese
   #       run: |
-  #         git clone --depth 1 --branch v0.2.0 \
+  #         git clone --depth 1 --branch v0.2.1 \
   #           https://github.com/matiasdominguez/ban-claudese \
   #           "$RUNNER_TEMP/ban-claudese"
   #     - name: Lint changed markdown

@@ -50,6 +50,9 @@ grep -q 'ban-claudese' "$CLAUDE_DIR/settings.json" && fail "rules-only touched s
 json_ok "$CLAUDE_DIR/settings.json"
 pass "rules-only install"
 
+# Content after the block must survive an upgrade with its blank line intact.
+printf '\n# Local section\n\nmy own notes\n' >> "$CLAUDE_DIR/CLAUDE.md"
+
 # 2. Full install: hooks wired and tagged, seeded hook preserved, block upgraded in place.
 "$REPO/install.sh" --claude-dir "$CLAUDE_DIR" --all >/dev/null
 [ "$(count "$CLAUDE_DIR/CLAUDE.md" 'ban-claudese:start')" = 1 ] || fail "duplicate rules block after --all"
@@ -58,8 +61,15 @@ grep -q 'preexisting-hook' "$CLAUDE_DIR/settings.json" || fail "seeded hook lost
 [ "$(count "$CLAUDE_DIR/settings.json" '# ban-claudese')" = 2 ] || fail "expected 2 tagged hook entries"
 grep -q '"Stop"' "$CLAUDE_DIR/settings.json" || fail "Stop hook not wired"
 grep -q '"UserPromptSubmit"' "$CLAUDE_DIR/settings.json" || fail "reminder hook not wired"
+python3 - "$CLAUDE_DIR/CLAUDE.md" <<'PYEOF' || fail "upgrade welded the block to following content"
+import sys
+text = open(sys.argv[1]).read()
+tail = text.split("<!-- ban-claudese:end -->", 1)[1]
+sys.exit(0 if (not tail.strip() or tail.startswith("\n\n")) else 1)
+PYEOF
 [ -f "$CLAUDE_DIR/hooks/claudese-lint.py" ] || fail "lint script not installed"
 [ -f "$CLAUDE_DIR/hooks/claudese-patterns.txt" ] || fail "patterns not installed"
+grep -q "my own notes" "$CLAUDE_DIR/CLAUDE.md" || fail "content after the block was lost"
 json_ok "$CLAUDE_DIR/settings.json"
 pass "full install"
 
